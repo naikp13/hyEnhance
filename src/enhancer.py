@@ -15,10 +15,18 @@ class HSIEnhancer:
         self.lambda_reg = lambda_reg
         self.upsampler = HSIUpsampler()
 
-    def fuse_to_enhance(self, patch_size=12, stride=1, guide_radius=1, detail_weight=3.5):
-        """Perform HSI enhancement by fusing with MSI."""
+    def fuse_to_enhance(self, patch_size=12, stride=1, guide_radius=1, detail_weight=3.5, residual_weight=1.0):
+        """Perform HSI enhancement by fusing with MSI.
+
+        residual_weight scales the patch-wise sparse residual before guided filtering
+        (0 skips the patch stage entirely).
+        """
         patch_processor = PatchProcessor(self.hsi, self.msi, self.n_components, self.n_atoms, self.lambda_reg)
-        hsi_hr = patch_processor.run_parallel(patch_size, stride)
+        if residual_weight:
+            hsi_hr = residual_weight * patch_processor.run_parallel(patch_size, stride)
+        else:
+            hsi_hr = np.zeros((self.msi.shape[0], self.msi.shape[1], self.hsi.shape[2]), dtype=np.float32)
+        self.patch_stats = patch_processor.stats
     
         # Define default and fallback band indices
         selected_bands = [1, 7, 11]

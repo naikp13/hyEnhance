@@ -1,4 +1,5 @@
 import logging
+import os
 import numpy as np
 import rasterio
 from scipy.ndimage import median_filter
@@ -12,6 +13,10 @@ class HSIDataLoader:
     @staticmethod
     def load_image(file_path):
         """Load image using rasterio and convert to float32."""
+        path = os.fspath(file_path)
+        is_local = "://" not in path and not path.startswith("/vsi")  # keep GDAL virtual paths and URLs working
+        if is_local and not os.path.exists(path):
+            raise FileNotFoundError(f"No such image file: {path}")
         with rasterio.open(file_path) as src:
             img = src.read().astype(np.float32)
             img = np.moveaxis(img, 0, -1)

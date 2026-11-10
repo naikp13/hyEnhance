@@ -49,3 +49,14 @@ def test_preprocess_data_invalid_input():
     invalid_data = np.random.rand(100, 100)  # 2D instead of 3D
     with pytest.raises(ValueError, match="Input data must be 3D"):
         loader.preprocess_data(invalid_data)
+
+def test_load_image_accepts_gdal_virtual_paths():
+    """GDAL virtual paths are not on disk, so they must not be rejected by the existence check."""
+    import rasterio
+    from rasterio.io import MemoryFile
+    data = np.ones((1, 4, 4), dtype=np.float32)
+    with MemoryFile() as mem:
+        with mem.open(driver='GTiff', height=4, width=4, count=1, dtype='float32') as dst:
+            dst.write(data)
+        img = HSIDataLoader.load_image(mem.name)
+    assert img.shape == (4, 4, 1)

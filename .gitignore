@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+processing.log
+demo.log

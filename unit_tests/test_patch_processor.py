@@ -38,3 +38,23 @@ def test_process_patch_invalid_data(synthetic_patch_data):
     
     result = processor.process_patch(0, 0, patch_size=8)
     assert result is None  # Should return None for invalid patch
+
+def test_run_parallel_raises_when_every_patch_fails(synthetic_patch_data, monkeypatch):
+    """A stage that fails on every patch must not pass silently as an all-zero residual."""
+    from src.patch_processor import PatchProcessingError
+    hsi, msi = synthetic_patch_data
+    processor = PatchProcessor(hsi, msi, n_components=5, n_atoms=5, lambda_reg=0.0005)
+
+    def broken(*args, **kwargs):
+        raise ValueError("boom")
+    monkeypatch.setattr(processor.decomposition, "wavelet_3d_transform", broken)
+    with pytest.raises(PatchProcessingError, match="boom"):
+        processor.run_parallel(patch_size=8, stride=4)
+
+
+def test_run_parallel_reports_stats(synthetic_patch_data):
+    hsi, msi = synthetic_patch_data
+    processor = PatchProcessor(hsi, msi, n_components=5, n_atoms=5, lambda_reg=0.0005)
+    processor.run_parallel(patch_size=8, stride=8)
+    assert processor.stats["failed"] == 0
+    assert processor.stats["ok"] > 0

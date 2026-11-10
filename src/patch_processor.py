@@ -83,7 +83,8 @@ class PatchProcessor:
         hsi_hr = np.zeros((self.msi.shape[0], self.msi.shape[1], self.hsi.shape[2]), dtype=np.float32)
         counts = np.zeros((self.msi.shape[0], self.msi.shape[1]), dtype=np.int32)
 
-        backend = 'threading' if self.hsi.size < 1e6 else 'loky'
+        # Processes, not threads: sklearn's FastICA/NMF hold the GIL, so threads ran ~5x slower
+        backend = 'threading' if len(coords) < 50 else 'loky'
         results = Parallel(n_jobs=self.n_jobs, backend=backend)(
             delayed(self.process_patch)(x, y, patch_size) for x, y in tqdm(coords, desc="Processing patches")
         )

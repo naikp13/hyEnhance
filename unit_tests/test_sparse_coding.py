@@ -18,3 +18,11 @@ def test_residual_in_band_space():
     assert residual.shape == (p * f, p * f, bands)
     assert np.all(np.isfinite(residual))
     assert np.any(residual != 0)
+
+
+def test_band_map_without_ridge_handles_singular_components():
+    rng = np.random.default_rng(0)
+    comp = rng.random((144, 15))
+    comp[:, 10:] = 0  # zero-padded components, as produced when fewer can be extracted
+    M = SparseCoding.component_to_band_map(comp, rng.random((144, 12)), ridge=0)
+    assert M.shape == (15, 12) and np.all(np.isfinite(M))

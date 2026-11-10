@@ -94,6 +94,8 @@ class SparseCoding:
         component Gram matrix (0 gives ordinary least squares).
         """
         centered = hsi_flat - hsi_flat.mean(axis=0, keepdims=True)
+        if ridge <= 0:  # ordinary least squares; lstsq copes with zero-padded or duplicate components
+            return np.linalg.lstsq(hsi_comp_flat, centered, rcond=None)[0]
         G = hsi_comp_flat.T @ hsi_comp_flat
         lam = ridge * np.trace(G) / G.shape[0]
         return np.linalg.solve(G + lam * np.eye(G.shape[0]), hsi_comp_flat.T @ centered)
